@@ -1,4 +1,5 @@
-/* Data Definition Language (DDL) commands in RDBMS
+/* CHECK
+Data Definition Language (DDL) commands in RDBMS
 Consider the database schemas given below.
 Write ER diagram and schema diagram. The primary keys are 
 underlined and the data types are specified.
