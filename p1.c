@@ -1,228 +1,266 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+/*
+Consider a structure named Student with attributes as SID, NAME, 
+BRANCH, SEMESTER, ADDRESS. 
+Write a program in C/C++/ and perform the following operations using 
+the concept of files.
+a. Insert a new student
+b. Modify the address of the student based on SID
+c. Delete a student
+d. List all the students
+e. List all the students of CSE branch.
+f. List all the students of CSE branch and reside in Kuvempunagar.
+*/
 
-// Structure to represent a student
-struct Student {
-    int SID;
-    char NAME[50];
-    char BRANCH[50];
-    int SEMESTER;
-    char ADDRESS[100];
-};
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
 
-// Function to insert a new student
-void insertStudent() {
-    FILE *outfile;
-    struct Student student;
+typedef struct student{
+    char SID[20];
+    char name[25];
+    char branch[25];
+    char semester[25];
+    char address[25];
+}stu;
+stu st;
 
-    outfile = fopen("students.txt", "a");
-    if (outfile == NULL) {
-        printf("Error opening file.\n");
+void insert_new(){
+    printf("Enter the student ID of the student\n");
+    scanf("%s",st.SID);
+    printf("Enter the name of the student\n");
+    scanf("%s",st.name);
+    printf("Enter the Branch of the student\n");
+    scanf("%s",st.branch);
+    printf("Enter the Semester in which the student is present\n");
+    scanf("%s",st.semester);
+    printf("Enter the address at which the student reside\n");
+    scanf("%s",st.address);
+    
+    FILE *fp;
+    fp=fopen("student_info.txt","a");
+    
+    if(fp==NULL){
+        printf("Error Can't open the file now\n");
         return;
     }
-
-    printf("\nEnter SID: ");
-    scanf("%d", &student.SID);
-
-    // Clear the input buffer
-    while (getchar() != '\n');
-
-    printf("Enter Name: ");
-    fgets(student.NAME, sizeof(student.NAME), stdin);
-    student.NAME[strlen(student.NAME) - 1] = '\0'; // Remove the newline character
-
-    printf("Enter Branch: ");
-    fgets(student.BRANCH, sizeof(student.BRANCH), stdin);
-    student.BRANCH[strlen(student.BRANCH) - 1] = '\0'; // Remove the newline character
-
-    printf("Enter Semester: ");
-    scanf("%d", &student.SEMESTER);
-
-    // Clear the input buffer
-    while (getchar() != '\n');
-
-    printf("Enter Address: ");
-    fgets(student.ADDRESS, sizeof(student.ADDRESS), stdin);
-    student.ADDRESS[strlen(student.ADDRESS) - 1] = '\0'; // Remove the newline character
-
-    fprintf(outfile, "%d %s %s %d %s\n", student.SID, student.NAME, student.BRANCH, student.SEMESTER, student.ADDRESS);
-
-    fclose(outfile);
+    
+       fprintf(fp,"%s\t%s\t%s\t%s\t%s\n",
+       st.SID,st.name,st.branch,st.semester,st.address);
+       
+       fclose(fp);
+       printf("The student data has been added to the file\n");
+         
 }
 
-
-// Function to modify the address of a student based on SID
-void modifyAddress(int sid) {
-    FILE *infile, *tempFile;
-    struct Student student;
-
-    infile = fopen("students.txt", "r");
-    if (infile == NULL) {
-        printf("Error opening file.\n");
-        return;
-    }
-
-    tempFile = fopen("temp.txt", "w");
-    if (tempFile == NULL) {
-        printf("Error opening file.\n");
-        fclose(infile);
-        return;
-    }
-
-    while (fscanf(infile, "%d %s %s %d %s", &student.SID, student.NAME, student.BRANCH, &student.SEMESTER, student.ADDRESS) != EOF) {
-        if (student.SID == sid) {
-            printf("Enter new Address: ");
-            scanf("%s", student.ADDRESS);
-        }
-        fprintf(tempFile, "%d %s %s %d %s\n", student.SID, student.NAME, student.BRANCH, student.SEMESTER, student.ADDRESS);
-    }
-
-    fclose(infile);
-    fclose(tempFile);
-
-    remove("students.txt");
-    rename("temp.txt", "students.txt");
+void modify_add(){
+   char new_ID[25];
+   int flag=0;
+   printf("Enter the student ID whose address need to be modified\n");
+   scanf("%s",new_ID);
+   FILE *fp=fopen("student_info.txt","r");
+   if(fp==NULL){
+     printf("Error opening the file\n");
+     return;
+     
+   }
+   FILE *fp1=fopen("sample.txt","a");
+   if(fp1==NULL){
+     printf("Error opening the file\n");
+     return;
+   }
+   while(fscanf(fp,"%s%s%s%s%s",st.SID,st.name,st.branch,st.semester,
+   st.address)!=EOF){
+     if (strcmp(st.SID,new_ID)==0){
+        printf("Enter the new address of the student\n");
+        scanf("%s",st.address);
+          flag=1;
+     }
+           fprintf(fp1,"%s\t%s\t%s\t%s\t%s\n",st.SID,st.name,st.branch,st.semester,
+   st.address);
+   }
+ if(flag){
+    printf("The address is successfully modified\n");
+}
+else{
+    printf("The student with the given student ID do not exist\n");
+    
+  }
+ fclose(fp);
+ fclose(fp1);
+ 
+ remove("student_info.txt");
+ rename("sample.txt","student_info.txt");
+  
 }
 
-// Function to delete a student based on SID
-void deleteStudent(int sid) {
-    FILE *infile, *tempFile;
-    struct Student student;
-
-    infile = fopen("students.txt", "r");
-    if (infile == NULL) {
-        printf("Error opening file.\n");
-        return;
-    }
-
-    tempFile = fopen("temp.txt", "w");
-    if (tempFile == NULL) {
-        printf("Error opening file.\n");
-        fclose(infile);
-        return;
-    }
-
-    while (fscanf(infile, "%d %s %s %d %s", &student.SID, student.NAME, student.BRANCH, &student.SEMESTER, student.ADDRESS) != EOF) {
-        if (student.SID != sid) {
-            fprintf(tempFile, "%d %s %s %d %s\n", student.SID, student.NAME, student.BRANCH, student.SEMESTER, student.ADDRESS);
-        }
-    }
-
-    fclose(infile);
-    fclose(tempFile);
-
-    remove("students.txt");
-    rename("temp.txt", "students.txt");
+void delete_st(){
+     char new_ID[25];
+     int flag=0;
+     
+   printf("Enter the student ID whose entry in the file is to be deleted\n");
+   scanf("%s",new_ID);
+   FILE *fp=fopen("student_info.txt","r");
+   if(fp==NULL){
+     printf("Error opening the file\n");
+     return;
+   }
+   FILE *fp1=fopen("sample.txt","a");
+   if(fp1==NULL){
+     printf("Error opening the file\n");
+     return;
+   }
+   while(fscanf(fp,"%s%s%s%s%s",st.SID,st.name,st.branch,st.semester,
+   st.address)!=EOF){
+     if (strcmp(st.SID,new_ID)!=0){
+    fprintf(fp1,"%s\t%s\t%s\t%s\t%s\n",st.SID,st.name,st.branch,st.semester,
+   st.address);
+     }
+     else{
+        flag=1;
+     }
+      
+   }
+ if(flag){
+    printf("The student with the given ID is deleted successfully\n");
+}
+else{
+    printf("The given student do not exist\n");
+    
+  }
+ fclose(fp);
+ fclose(fp1);
+ 
+ remove("student_info.txt");
+ rename("sample.txt","student_info.txt");
+  
 }
 
-// Function to list all students
-void listAllStudents() {
-    FILE *infile;
-    struct Student student;
-
-    infile = fopen("students.txt", "r");
-    if (infile == NULL) {
-        printf("Error opening file.\n");
-        return;
-    }
-
-    while (fscanf(infile, "%d %s %s %d %s", &student.SID, student.NAME, student.BRANCH, &student.SEMESTER, student.ADDRESS) != EOF) {
-        printf("SID: %d, Name: %s, Branch: %s, Semester: %d, Address: %s\n", student.SID, student.NAME, student.BRANCH, student.SEMESTER, student.ADDRESS);
-    }
-
-    fclose(infile);
+void list_all(){
+    int flag=0;
+    FILE *fp=fopen("student_info.txt","r");
+    if(fp==NULL){
+     printf("Error opening the file\n");
+     return;
+   } 
+   
+   printf("The list of all the students\n"); 
+   while(fscanf(fp,"%s%s%s%s%s",st.SID,st.name,st.branch,st.semester,
+   st.address)!=EOF){
+        printf("Student ID       :- %s\n",st.SID);
+        printf("Student Name     :- %s\n",st.name);
+        printf("Student Branch   :- %s\n",st.branch);
+        printf("Student Semester :- %s\n",st.semester);
+        printf("Student Address  :- %s\n",st.address);
+        printf("\n\n");flag=1;
+   }
+   if(flag==0){
+       printf("There is no student present in the given file\n");
+   }
+   fclose(fp);
 }
 
-// Function to list all students of a specific branch
-void listStudentsByBranch(char *branch) {
-    FILE *infile;
-    struct Student student;
-
-    infile = fopen("students.txt", "r");
-    if (infile == NULL) {
-        printf("Error opening file.\n");
-        return;
-    }
-
-    while (fscanf(infile, "%d %s %s %d %s", &student.SID, student.NAME, student.BRANCH, &student.SEMESTER, student.ADDRESS) != EOF) {
-        if (strcmp(student.BRANCH, branch) == 0) {
-            printf("SID: %d, Name: %s, Branch: %s, Semester: %d, Address: %s\n", student.SID, student.NAME, student.BRANCH, student.SEMESTER, student.ADDRESS);
-        }
-    }
-
-    fclose(infile);
+void list_cse(){
+     int flag=0;
+      FILE *fp=fopen("student_info.txt","r");
+    if(fp==NULL){
+     printf("Error opening the file\n");
+     return;
+   } 
+   
+   printf("The list of all the students of CSE branch\n"); 
+   while(fscanf(fp,"%s%s%s%s%s",st.SID,st.name,st.branch,st.semester,
+   st.address)!=EOF){
+        if(strcmp(st.branch,"CSE")==0){
+        printf("Student ID       :- %s\n",st.SID);
+        printf("Student Name     :- %s\n",st.name);
+        printf("Student Branch   :- %s\n",st.branch);
+        printf("Student Semester :- %s\n",st.semester);
+        printf("Student Address  :- %s\n",st.address);
+        printf("\n\n");
+        flag=1;
+        }  
+   }
+   if(flag==0){
+       printf("there is no student present in CSE in the file\n");
+   }
+   fclose(fp); 
 }
 
-// Function to list all students of a specific branch residing in Kuvempunagar
-void listStudentsByBranchAndAddress(char *branch, char *address) {
-    FILE *infile;
-    struct Student student;
-
-    infile = fopen("students.txt", "r");
-    if (infile == NULL) {
-        printf("Error opening file.\n");
-        return;
-    }
-
-    while (fscanf(infile, "%d %s %s %d %s", &student.SID, student.NAME, student.BRANCH, &student.SEMESTER, student.ADDRESS) != EOF) {
-        if (strcmp(student.BRANCH, branch) == 0 && strcmp(student.ADDRESS, address) == 0) {
-            printf("SID: %d, Name: %s, Branch: %s, Semester: %d, Address: %s\n", student.SID, student.NAME, student.BRANCH, student.SEMESTER, student.ADDRESS);
-        }
-    }
-
-    fclose(infile);
+void list_cse_kuv(){
+    int flag=0;
+    FILE *fp=fopen("student_info.txt","r");
+    if(fp==NULL){
+     printf("Error opening the file\n");
+     return;
+   } 
+   
+   printf("The list of all the students of CSE branch and residing in kuvenpunagar\n"); 
+   while(fscanf(fp,"%s%s%s%s%s",st.SID,st.name,st.branch,st.semester,
+   st.address)!=EOF){
+        if(strcmp(st.branch,"CSE")==0 && strcmp(st.address,"kuvempunagar")==0){
+        printf("Student ID       :- %s\n",st.SID);
+        printf("Student Name     :- %s\n",st.name);
+        printf("Student Branch   :- %s\n",st.branch);
+        printf("Student Semester :- %s\n",st.semester);
+        printf("Student Address  :- %s\n",st.address);
+        printf("\n\n");
+        flag=1;
+        }  
+   }
+   if(flag==0){
+       printf("there is no student of whose branch is CSE and reside in kuvempunagar\n");
+   }
+   fclose(fp);
 }
 
 int main() {
-    int choice, sid;
-    char branch[50], address[100];
-
+    int choice;
     while (1) {
         printf("\nMenu:\n");
         printf("1. Insert a new student\n");
-        printf("2. Modify student's address\n");
+        printf("2. Modify the address of a student based on SID\n");
         printf("3. Delete a student\n");
         printf("4. List all students\n");
-        printf("5. List all students of a specific branch\n");
-        printf("6. List all students of a specific branch residing in Kuvempunagar\n");
+        printf("5. List all students of CSE branch\n");
+        printf("6. List all students of CSE branch residing in Kuvempunagar\n");
         printf("7. Exit\n");
+        printf("\n\n");
         printf("Enter your choice: ");
         scanf("%d", &choice);
 
         switch (choice) {
             case 1:
-                insertStudent();
+                insert_new();
+                printf("\n");
                 break;
             case 2:
-                printf("Enter SID to modify address: ");
-                scanf("%d", &sid);
-                modifyAddress(sid);
+                modify_add();
+                printf("\n");
                 break;
             case 3:
-                printf("Enter SID to delete: ");
-                scanf("%d", &sid);
-                deleteStudent(sid);
+                delete_st();
+                printf("\n");
                 break;
             case 4:
-                listAllStudents();
+                list_all();
+                printf("\n");
                 break;
             case 5:
-                printf("Enter branch to list students: ");
-                scanf("%s", branch);
-                listStudentsByBranch(branch);
+                list_cse();
+                printf("\n");
                 break;
             case 6:
-                printf("Enter branch: ");
-                scanf("%s", branch);
-                printf("Enter address: ");
-                scanf("%s", address);
-                listStudentsByBranchAndAddress(branch, address);
+                list_cse_kuv();
+                printf("\n");
                 break;
             case 7:
-                return 0;
+                exit(0);
+                printf("\n");
+                break;
             default:
-                printf("Invalid choice. Try again.\n");
+                printf("Invalid choice!!!\n");
+                printf("\n");
+                break;
         }
     }
 
