@@ -48,8 +48,8 @@ select *from BOAT;
 insert into RESERVES values 
 (101,201,20230101),(102,202,20230201),(103,203,20230301),(104,204,20230401),(105,205,20230501);
 select *from RESERVES;
-#Values specified as numbers should be 6, 8, 12, or 14 digits long. If a number is 8 or 14 digits long, it is assumed to be in
-# YYYYMMDD or YYYYMMDDhhmmss format and that the year is given by the first 4 digits. 
+/*Values specified as numbers should be 6, 8, 12, or 14 digits long. If a number is 8 or 14 digits long, it is assumed to be in
+# YYYYMMDD or YYYYMMDDhhmmss format and that the year is given by the first 4 digits. */
 update sailors set sname="Albert" where sid=101;
 
 update reserves set sid=101 where bid>=201;
