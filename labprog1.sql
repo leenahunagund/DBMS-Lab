@@ -16,128 +16,110 @@ Queries, View and Trigger
 7.	Create a view that shows the names and colours of all the boats that have been reserved by a sailor with a specific rating.
 8.	A trigger that prevents boats from being deleted If they have active reservations. 
 */
+drop database if exists sailors;
+
 create database sailors;
 use sailors;
-create table SAILORS
-(
-sid INT PRIMARY KEY, 
-sname VARCHAR(50), 
-rating INT, 
-age INT
-);
-create table BOAT
-(bid INT PRIMARY KEY, 
-bname VARCHAR(50), 
-color VARCHAR(20)
-);
-create table RESERVES
-(
-sid INT, 
-bid INT,
-date date, 
-PRIMARY KEY (sid, bid), 
-FOREIGN KEY (sid) REFERENCES SAILORS(sid),
-FOREIGN KEY (bid) REFERENCES BOAT(bid)
-);
-insert into SAILORS values
-(101,"Alice",9,25),(102,"Bob",8,28),(103,"Carol",7,22),(104,"David",8,30),(105,"Emily",6,35);
-select *from SAILORS;
-insert into BOAT values 
-(201, "Boat1", "Blue"),( 202,"Boat2","Red"),(203,"Boat3","Green"),(204,"Boat4","Yellow"),(205,"Boat5","Black");
-select *from BOAT;
-insert into RESERVES values 
-(101,201,20230101),(102,202,20230201),(103,203,20230301),(104,204,20230401),(105,205,20230501);
-select *from RESERVES;
-/*Values specified as numbers should be 6, 8, 12, or 14 digits long. If a number is 8 or 14 digits long, it is assumed to be in
-# YYYYMMDD or YYYYMMDDhhmmss format and that the year is given by the first 4 digits. */
-update sailors set sname="Albert" where sid=101;
 
-update reserves set sid=101 where bid>=201;
+create table if not exists Sailors(
+sid int primary key,
+sname varchar(35) not null,
+rating float not null,
+age int not null);
 
-update sailors set age=40 where sid=101;
-update sailors set age=41 where sid=102;
-update sailors set age=40 where sid=103;
-update sailors set age=42 where sid=104;
-update sailors set age=47 where sid=105;
-
-update reserves set bid=203 where sid>=102;
-
-
-update reserves set sid=102 where bid=202;
-update reserves set sid=103 where bid=203;
-update reserves set sid=104 where bid=204;
-update reserves set sid=105 where bid=205;
-
-update reserves set bid=201 where sid>=101;
-
-update reserves set bid=202 where sid=102;
-update reserves set bid=203 where sid=103;
-update reserves set bid=204 where sid=104;
-update reserves set bid=205 where sid=105;
-
-#queries
-SELECT b.color
-FROM SAILORS s
-JOIN RESERVES r ON s.sid = r.sid
-JOIN BOAT b ON r.bid = b.bid
-WHERE s.sname = 'Albert';
-
-SELECT DISTINCT s.sid
-FROM SAILORS s
-LEFT JOIN RESERVES r ON s.sid = r.sid
-WHERE s.rating >= 8 OR r.bid = 103;
-
-SELECT s.sname
-FROM SAILORS s
-LEFT JOIN RESERVES r ON s.sid = r.sid
-LEFT JOIN BOAT b ON r.bid = b.bid
-WHERE b.bname NOT LIKE '%storm%' OR b.bid IS NULL
-ORDER BY s.sname ASC;
-
-SELECT s.sname
-FROM SAILORS s
-WHERE NOT EXISTS (
-  SELECT b.bid
-  FROM BOAT b
-  WHERE NOT EXISTS (
-    SELECT r.bid
-    FROM RESERVES r
-    WHERE r.sid = s.sid AND r.bid = b.bid
-  )
+create table if not exists Boat(
+bid int primary key,
+bname varchar(35) not null,
+color varchar(25) not null
 );
 
-SELECT sname, age
-FROM SAILORS
-ORDER BY age DESC
-LIMIT 1;
+create table if not exists reserves(
+sid int not null,
+bid int not null,
+sdate date not null,
+foreign key (sid) references Sailors(sid) on delete cascade,
+foreign key (bid) references Boat(bid) on delete cascade
+);
 
-SELECT r.bid, AVG(s.age) AS avg_age
-FROM RESERVES r
-JOIN SAILORS s ON r.sid = s.sid
-WHERE s.age >= 40
-GROUP BY r.bid
-HAVING COUNT(DISTINCT r.sid) >= 5;
+show tables;
 
-CREATE VIEW SailorBoatColors AS
-SELECT s.sname, b.color
-FROM SAILORS s
-JOIN RESERVES r ON s.sid = r.sid
-JOIN BOAT b ON r.bid = b.bid;
+insert into sailors values
+(1,"Albert", 5.0, 40),
+(2, "Nakul", 5.0, 49),
+(3, "Darshan", 9, 18),
+(4, "Astorm Gowda", 2, 68),
+(5, "Armstormin", 7, 19);
 
+insert into boat values
+(1,"Boat_1", "Green"),
+(2,"Boat_2", "Red"),
+(103,"Boat_3", "Blue");
+
+insert into reserves values
+(1,103,"2023-01-01"),
+(1,2,"2023-02-01"),
+(2,1,"2023-02-05"),
+(3,2,"2023-03-06"),
+(5,103,"2023-03-06"),
+(1,1,"2023-03-06");
+
+select *from sailors;
+select *from boat;
+select *from reserves;
+
+#q1
+select boat.color from boat,sailors,reserves where reserves.sid=sailors.sid and reserves.bid=boat.bid and sailors.sname like "albert"  ;
+
+#q2 
+(select sid
+from Sailors
+where Sailors.rating>=8)
+UNION
+(select sid 
+from reserves
+where reserves.bid=103);
+
+#q3
+select sailors.sname from sailors
+where sailors.sid not in 
+(select sailors.sid from sailors,reserves where reserves.sid=sailors.sid and sailors.sname like "%storm%") 
+and  sailors.sname like "%storm%" 
+order by sailors.sname ASC;
+
+
+#q4 
+select s.sname from sailors s where not exists(select *from boat b where not exists (select *from reserves r where r.sid=s.sid and r.bid=b.bid));
+
+#q5 
+select s.sname, s.age from sailors s where age in (select max(age) from sailors);
+
+#q6
+select b.bid, avg(s.age) as avg_age from boat b ,sailors s ,reserves r
+where r.sid=s.sid and r.bid=b.bid and age>=40
+group by bid having 5<=count(distinct r.sid);
+
+#q7
+create view namewcolors as
+select b.bname,b.color,s.rating from boat b , sailors s
+where s.rating=5;
+select *from namewcolors;
+
+#q8
 DELIMITER //
-CREATE TRIGGER prevent_delete
-BEFORE DELETE ON BOAT
-FOR EACH ROW
+CREATE TRIGGER CheckAndDelete
+before delete on Boat
+for each row
 BEGIN
-  IF EXISTS (SELECT 1 FROM RESERVES WHERE bid = OLD.bid) THEN
-    SIGNAL SQLSTATE '45000'
-    SET MESSAGE_TEXT = 'Cannot delete boat with active reservations';
-  END IF;
-END;
-//
+IF EXISTS (select * from reserves where reserves.bid=old.bid)
+THEN
+SIGNAL SQLSTATE '45000' SET message_text='Boat is reserved and hence cannot be deleted';
+END IF;
+END;//
 DELIMITER ;
-delete from BOAT where bid=205;
-select *from BOAT;
+delete from boat where bid=103;
+
+
+
 
 
 
