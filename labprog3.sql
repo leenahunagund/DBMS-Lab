@@ -17,166 +17,121 @@ Warehouse (warehouse#:int, city: string)
 6.	A trigger that updates order_amout based on quantity and unitprice of order_item
 7.	Create a view to display orderID and shipment date of all orders shipped from a warehouse 
 */
-create database orderp;
-use orderp;
-
-CREATE TABLE Customer (
-    cid INT PRIMARY KEY,
-    cname VARCHAR(25),
-    city VARCHAR(25)
+drop database if exists order_processing;
+create database order_processing;
+use order_processing;
+create table if not exists Customers (
+cust_id int primary key,
+cname varchar(35) not null,
+city varchar(35) not null
+);
+create table if not exists Orders (
+order_id int primary key,
+odate date not null,
+cust_id int,
+order_amt int not null,
+foreign key (cust_id) references Customers(cust_id) on delete cascade
+);
+create table if not exists Items (
+item_id int primary key,
+unitprice int not null
+);
+create table if not exists OrderItems (
+order_id int not null,
+item_id int not null,
+qty int not null,
+foreign key (order_id) references Orders(order_id) on delete cascade,
+foreign key (item_id) references Items(item_id) on delete cascade
+);
+create table if not exists Warehouses (
+warehouse_id int primary key,
+city varchar(35) not null
+);
+create table if not exists Shipments (
+order_id int not null,
+warehouse_id int not null,
+ship_date date not null,
+foreign key (order_id) references Orders(order_id) on delete cascade,
+foreign key (warehouse_id) references Warehouses(warehouse_id) on delete cascade
 );
 
-CREATE TABLE OrderTable (
-    orders INT PRIMARY KEY,
-    odate DATE,
-    cid INT,
-    order_amt INT,
-    FOREIGN KEY (cid) REFERENCES Customer(cid)
-);
+INSERT INTO Customers VALUES
+(0001, "Customer_1", "Mysuru"),
+(0002, "Customer_2", "Bengaluru"),
+(0003, "Kumar", "Mumbai"),
+(0004, "Customer_4", "Dehli"),
+(0005, "Customer_5", "Bengaluru");
+INSERT INTO Orders VALUES
+(001, "2020-01-14", 0001, 2000),
+(002, "2021-04-13", 0002, 500),
+(003, "2019-10-02", 0003, 2500),
+(004, "2019-05-12", 0005, 1000),
+(005, "2020-12-23", 0004, 1200);
+INSERT INTO Items VALUES
+(0001, 400),
+(0002, 200),
+(0003, 1000),
+(0004, 100),
+(0005, 500);
+INSERT INTO Warehouses VALUES
+(0001, "Mysuru"),
+(0002, "Bengaluru"),
+(0003, "Mumbai"),
+(0004, "Dehli"),
+(0005, "Chennai");
+INSERT INTO OrderItems VALUES
+(001, 0001, 5),
+(002, 0005, 1),
+(003, 0005, 5),
+(004, 0003, 1),
+(005, 0004, 12);
+INSERT INTO Shipments VALUES
+(001, 0002, "2020-01-16"),
+(002, 0001, "2021-04-14"),
+(003, 0004, "2019-10-07"),
+(004, 0003, "2019-05-16"),
+(005, 0005, "2020-12-23");
+select *from customers;
+select *from orders;
+select *from orderitems;
+select *from items;
+select *from shipments;
+select *from warehouses;
 
-CREATE TABLE Item (
-    item INT PRIMARY KEY,
-    unitprice INT
-);
-CREATE TABLE OrderItem (
-    orders INT,
-    item INT,
-    qty INT,
-    PRIMARY KEY (orders, item),
-    FOREIGN KEY (orders) REFERENCES OrderTable(orders),
-    FOREIGN KEY (item) REFERENCES Item(item)
-);
+#q1 
+select order_id , ship_date from shipments where warehouse_id like "%1%";
 
-CREATE TABLE Warehouse (
-    warehouse INT PRIMARY KEY,
-    city VARCHAR(255)
-);
+#q2 
+select s.order_id, s.warehouse_id from orders o ,shipments s , customers c where s.order_id=o.order_id and o.cust_id=c.cust_id and c.cname like "%kumar%";
+#select order_id,warehouse_id from Warehouses natural join Shipments where order_id in (select order_id from Orders where cust_id in (Select cust_id from Customers where cname like "%Kumar%"));
 
-CREATE TABLE Shipment (
-    orders INT,
-    warehouse INT,
-    ship_date DATE,
-    PRIMARY KEY (orders,warehouse),
-    FOREIGN KEY (orders) REFERENCES OrderTable(orders),
-    FOREIGN KEY (warehouse) REFERENCES Warehouse(warehouse)
-);
+#q3 
+select c.cname, count(*) as number_of_orders, avg(order_amt) as avg_order_amt
+from customers c ,orders o
+where c.cust_id=o.cust_id 
+group by cname;
 
--- Insert into Customer
-INSERT INTO Customer VALUES (1, 'Kumar', 'City1');
-INSERT INTO Customer VALUES (2, 'John', 'City2');
-INSERT INTO Customer VALUES (3, 'mary', 'City3');
-INSERT INTO Customer VALUES (4, 'cindy', 'City4');
-INSERT INTO Customer VALUES (5, 'andy', 'City5');
--- Add more tuples as needed
+#q4 
+select max(unitprice) from items;
 
+#q5
+create view ordershipment as
+select order_id, ship_date from shipments where warehouse_id like "%2";
 
--- Insert into Item
-INSERT INTO Item VALUES (1, 50);
-INSERT INTO Item VALUES (2, 30);
-INSERT INTO Item VALUES (3, 10);
-INSERT INTO Item VALUES (4, 20);
-INSERT INTO Item VALUES (5, 40);
--- Add more tuples as needed
-
--- Insert into OrderTable
-INSERT INTO OrderTable VALUES (101, '2023-01-01', 1, 500);
-INSERT INTO OrderTable VALUES (102, '2023-02-01', 2, 700);
-INSERT INTO OrderTable VALUES (103, '2023-03-01', 3, 200);
-INSERT INTO OrderTable VALUES (104, '2023-04-01', 4, 800);
-INSERT INTO OrderTable VALUES (105, '2023-05-01', 5, 400);
--- Add more tuples as needed
-
--- Insert into Warehouse
-INSERT INTO Warehouse VALUES (1, 'City1');
-INSERT INTO Warehouse VALUES (2, 'City2');
-INSERT INTO Warehouse VALUES (3, 'City3');
-INSERT INTO Warehouse VALUES (4, 'City4');
-INSERT INTO Warehouse VALUES (5, 'City5');
--- Add more tuples as needed
-
--- Insert into OrderItem
-INSERT INTO OrderItem VALUES (101, 1, 2);
-INSERT INTO OrderItem VALUES (101, 2, 1);
-INSERT INTO OrderItem VALUES (102, 3, 4);
-INSERT INTO OrderItem VALUES (103, 1, 6);
-INSERT INTO OrderItem VALUES (104, 2, 1);
--- Add more tuples as needed
-
--- Insert into Shipment
-INSERT INTO Shipment VALUES (101, 1, '2023-01-10');
-INSERT INTO Shipment VALUES (102, 2, '2023-02-10');
-INSERT INTO Shipment VALUES (103, 3, '2023-03-10');
-INSERT INTO Shipment VALUES (104, 4, '2023-04-10');
-INSERT INTO Shipment VALUES (105, 5, '2023-05-10');
--- Add more tuples as needed
-
-select *from customer;
-select *from item;
-select *from orderitem;
-select *from ordertable;
-select *from shipment;
-select *from warehouse;
-
-#queries
-SELECT S.orders, S.ship_date
-FROM Shipment S
-WHERE S.warehouse = (SELECT W.warehouse FROM Warehouse W WHERE W.city = 'City2');
-
-SELECT O.orders, S.warehouse
-FROM OrderTable O
-JOIN Shipment S ON O.orders = S.orders
-JOIN Warehouse W ON S.warehouse = W.warehouse
-WHERE O.cid = (SELECT C.cid FROM Customer C WHERE C.cname = 'Kumar');
-
-update ordertable set cid=3 where orders=103;
-update ordertable set cid=4 where orders=104;
-update ordertable set cid=5 where orders=105;
-
-SELECT C.cname, COUNT(O.orders) AS ofOrders, AVG(O.order_amt) AS Avg_Order_Amt
-FROM Customer C
-LEFT JOIN OrderTable O ON C.cid = O.cid
-GROUP BY C.cname;
-
-SELECT C.cid FROM Customer C WHERE C.cname = 'Kumar';
-
--- Delete records from Shipment associated with the orders for the customer named "Kumar"
-DELETE FROM Shipment
-WHERE orders IN (SELECT orders FROM OrderTable WHERE cid = (SELECT cid FROM Customer WHERE cname = 'Kumar'));
-
--- Delete records from OrderItem associated with the customer named "Kumar"
-DELETE FROM OrderItem
-WHERE orders IN (SELECT orders FROM OrderTable WHERE cid = (SELECT cid FROM Customer WHERE cname = 'Kumar'));
-
--- Delete orders for the customer named "Kumar" along with associated records in OrderItem
-DELETE FROM OrderTable
-WHERE cid= (SELECT cid FROM Customer WHERE cname = 'Kumar');
-
-select *from OrderTable;
-select *from customer;
-select *from orderitem;
-select *from shipment;
-
-SELECT * FROM Item
-WHERE unitprice = (SELECT MAX(unitprice) FROM Item);
-
-
+#q6
 DELIMITER //
-CREATE TRIGGER update_order_amount
-AFTER INSERT ON OrderItem
-FOR EACH ROW
-BEGIN
-    UPDATE OrderTable
-    SET order_amt = order_amt + NEW.qty * (SELECT unitprice FROM Item WHERE item = NEW.item)
-    WHERE orders = NEW.orders;
-END;
+create trigger updateamt
+after insert on orderitems
+for each row
+begin
+update orders set order_amt=(new.qty*(select distinct unitprice from items natural join orderitems where item_id=new.item_id)) 
+where orders.order_id=new.order_id;
+end; // 
+DELIMITER ;
+INSERT INTO Orders VALUES
+(006, "2020-12-23", 0004, 1200);
+INSERT INTO OrderItems VALUES
+(006, 0001, 5);
+select *from orders;
+select *from orderitems;
 
-//DELIMITER ;
-INSERT INTO OrderTable VALUES (106, '2023-06-01', 1, 500);
-INSERT INTO OrderItem VALUES (106, 1, 5);
-select *from item;
-select *from ordertable;
-
-CREATE VIEW ShippedOrdersView AS
-SELECT S.orders, S.ship_date
-FROM Shipment S;
-select *from shippedordersview;
