@@ -15,148 +15,127 @@ TEXT (book-ISBN: int, book-title: string, publisher: string,author: string)
 5.	Create a view to display all the courses opted by a student along with marks obtained.
 6.	Create a trigger that prevents a student from enrolling in a course if the marks prerequisite is less than  40.
 */
-create database student;
-use student;
-
-CREATE TABLE STUDENT (
-    regno VARCHAR(255) PRIMARY KEY,
-    Sname VARCHAR(255),
-    major VARCHAR(255),
-    bdate DATE
+drop database if exists enrollment;
+create database enrollment;
+use enrollment;
+create table Student(
+regno varchar(13) primary key,
+name varchar(25) not null,
+major varchar(25) not null,
+bdate date not null
+);
+create table Course(
+course int primary key,
+cname varchar(30) not null,
+dept varchar(100) not null
+);
+create table Enroll(
+regno varchar(13),
+course int,
+sem int not null,
+marks int not null,
+foreign key(regno) references Student(regno) on delete cascade,
+foreign key(course) references Course(course) on delete cascade
+);
+create table TextBook(
+bookIsbn int not null,
+book_title varchar(40) not null,
+publisher varchar(25) not null,
+author varchar(25) not null,
+primary key(bookIsbn)
+);
+create table BookAdoption(
+course int not null,
+sem int not null,
+bookIsbn int not null,
+foreign key(bookIsbn) references TextBook(bookIsbn) on delete cascade,
+foreign key(course) references Course(course) on delete cascade
 );
 
-CREATE TABLE COURSE (
-    course INT PRIMARY KEY,
-    cname VARCHAR(255),
-    dept VARCHAR(255)
-);
+INSERT INTO Student VALUES
+("01HF235", "Student_1", "CSE", "2001-05-15"),
+("01HF354", "Student_2", "Literature", "2002-06-10"),
+("01HF254", "Student_3", "Philosophy", "2000-04-04"),
+("01HF653", "Student_4", "History", "2003-10-12"),
+("01HF234", "Student_5", "Computer Economics", "2001-10-10");
+INSERT INTO Course VALUES
+(001, "DBMS", "CS"),
+(002, "Literature", "English"),
+(003, "Philosophy", "Philosphy"),
+(004, "History", "Social Science"),
+(005, "Computer Economics", "CS");
+INSERT INTO Enroll VALUES
+("01HF235", 001, 5, 85),
+("01HF354", 002, 6, 87),
+("01HF254", 003, 3, 95),
+("01HF653", 004, 3, 80),
+("01HF234", 005, 5, 75);
+INSERT INTO TextBook VALUES
+(241563, "Operating Systems", "Pearson", "Silberschatz"),
+(532678, "Complete Works of Shakesphere", "Oxford", "Shakesphere"),
+(453723, "Immanuel Kant", "Delphi Classics", "Immanuel Kant"),
+(278345, "History of the world", "The Times", "Richard Overy"),
+(426784, "Behavioural Economics", "Pearson", "David Orrel");
+INSERT INTO BookAdoption VALUES
+(001, 5, 241563),
+(002, 6, 532678),
+(003, 3, 453723),
+(004, 3, 278345),
+(001, 6, 426784);
 
-CREATE TABLE TEXTBOOK (
-    book_ISBN INT PRIMARY KEY,
-    book_title VARCHAR(255),
-    publisher VARCHAR(255),
-    author VARCHAR(255)
-);
+select * from Student;
+select * from Course;
+select * from Enroll;
+select * from BookAdoption;
+select * from TextBook;
 
-CREATE TABLE ENROLL (
-    regno VARCHAR(255),
-    course INT,
-    sem INT,
-    marks INT,
-    PRIMARY KEY (regno, course, sem),
-    INDEX idx_course_sem (course, sem), -- Add an index for the composite key
-    FOREIGN KEY (regno) REFERENCES STUDENT(regno),
-    FOREIGN KEY (course) REFERENCES COURSE(course)
-);
+#q1
+insert into textbook values (123896,"ansi c","computergeeks","verma");
+insert into bookadoption values(001,2,123896);
 
-CREATE TABLE BOOK_ADOPTION (
-    course INT,
-    sem INT,
-    book_ISBN INT,
-    PRIMARY KEY (course, sem, book_ISBN),
-    FOREIGN KEY (course,sem) REFERENCES ENROLL(course,sem),
-    FOREIGN KEY (book_ISBN) REFERENCES TEXTBOOK(book_ISBN)
-);
+#q2
+select c.course,t.bookisbn,t.book_title
+from course c , textbook t, bookadoption ba
+where c.course=ba.course and ba.bookisbn=t.bookisbn and c.dept="CS" 
+and 2<(select count(bookisbn) from bookadoption where c.course=ba.course)
+order by t.book_title;
 
--- Insert into STUDENT
-INSERT INTO STUDENT VALUES ('S001', 'John Doe', 'CSE', '2000-01-01');
-INSERT INTO STUDENT VALUES ('S002', 'Jane Smith', 'EEE', '2001-02-15');
-INSERT INTO STUDENT VALUES ('S003', 'Jack', 'CSE', '2000-01-01');
-INSERT INTO STUDENT VALUES ('S004', 'hillary', 'EC', '2000-01-01');
-INSERT INTO STUDENT VALUES ('S005', 'Joe', 'CTM', '2000-01-01');
--- Add more tuples as needed
+#q3
+SELECT DISTINCT c.dept
+FROM Course c
+WHERE c.dept IN
+( SELECT c.dept
+FROM Course c,BookAdoption b,TextBook t
+WHERE c.course=b.course
+AND t.bookIsbn=b.bookIsbn
+AND t.publisher='PEARSON')
+AND c.dept NOT IN
+( SELECT c.dept
+FROM Course c, BookAdoption b, TextBook t
+WHERE c.course=b.course
+AND t.bookIsbn=b.bookIsbn
+AND t.publisher!='PEARSON');
 
--- Insert into COURSE
-INSERT INTO COURSE VALUES (101, 'Introduction to CS', 'CS');
-INSERT INTO COURSE VALUES (102, 'Database Management Systems', 'CS');
-INSERT INTO COURSE VALUES (103, 'OS', 'CS');
-INSERT INTO COURSE VALUES (104, 'CALCULUS', 'MATHS');
-INSERT INTO COURSE VALUES (105, 'OOPS', 'CS');
--- Add more tuples as needed
+#q4
+select name from Student s, Enroll e, Course c
+where s.regno=e.regno and e.course=c.course and c.cname="DBMS" 
+and e.marks in (select max(marks) from Enroll e1, Course c1 where c1.cname="DBMS" and c1.course=e1.course);
 
--- Insert into ENROLL
-INSERT INTO ENROLL VALUES ('S001', 101, 1, 80);
-INSERT INTO ENROLL VALUES ('S002', 102, 1, 75);
-INSERT INTO ENROLL VALUES ('S003', 103, 3, 75);
-INSERT INTO ENROLL VALUES ('S004', 104, 3, 75);
-INSERT INTO ENROLL VALUES ('S005', 105, 5, 75);
--- Add more tuples as needed
+#q5
+create view CoursesOptedByStudent as
+select c.cname, e.marks from Course c, Enroll e
+where e.course=c.course and e.regno="01HF235";
 
--- Insert into BOOK_ADOPTION
-INSERT INTO BOOK_ADOPTION VALUES (101, 1, 1001);
-INSERT INTO BOOK_ADOPTION VALUES (102, 1, 1002);
-INSERT INTO BOOK_ADOPTION VALUES (103, 3, 1003);
-INSERT INTO BOOK_ADOPTION VALUES (104, 3, 1003);
-INSERT INTO BOOK_ADOPTION VALUES (105, 5, 1005);
--- Add more tuples as needed
-
--- Insert into TEXT
-INSERT INTO TEXTBOOK VALUES (1001, 'Computer Science Book', 'Tech Publishers', 'Alice Author');
-INSERT INTO TEXTBOOK VALUES (1002, 'maths Book', 'rd sharma', 'rd sharma');
-INSERT INTO TEXTBOOK VALUES (1003, 'OS ', 'Tech Publishers', 'pearson');
-INSERT INTO TEXTBOOK VALUES (1004, 'DSA', 'Tech Publishers', 'pearson');
-INSERT INTO TEXTBOOK VALUES (1005, 'DBMS', 'Tech Publishers', 'kyrdy');
--- Add more tuples as needed
-select *from student;
-select *from course;
-select *from enroll;
-select *from textbook;
-select *from book_adoption;
-
-#QUERIES
-INSERT INTO TEXTBOOK (book_ISBN, book_title, publisher, author)
-VALUES (1006, 'New Textbook', 'NewPub', 'New Author');
-
-INSERT INTO COURSE VALUES (201,"NEW","MECH");
-INSERT INTO ENROLL VALUES('S006',201,1,50);
-INSERT INTO STUDENT VALUES ('S006',"MAY","CSE","2000-03-01");
-INSERT INTO BOOK_ADOPTION (course, sem, book_ISBN)
-VALUES (201, 1, 1006);
-
-SELECT B.course, T.book_ISBN, T.book_title
-FROM BOOK_ADOPTION B
-JOIN TEXTBOOK T ON B.book_ISBN = T.book_ISBN
-WHERE B.course IN (SELECT course FROM COURSE WHERE dept = 'CSE')
-GROUP BY B.course, T.book_ISBN, T.book_title
-HAVING COUNT(B.book_ISBN) >=1
-ORDER BY T.book_title;
-
-SELECT DISTINCT C.dept
-FROM COURSE C
-WHERE 'Tech Publishers' = ALL (
-    SELECT T.publisher
-    FROM BOOK_ADOPTION B
-    JOIN TEXTBOOK T ON B.book_ISBN = T.book_ISBN
-    WHERE B.course = C.course
-);
-
-SELECT E.regno, E.marks
-FROM ENROLL E
-WHERE E.course = (SELECT course FROM COURSE WHERE cname = 'Database Management Systems')
-ORDER BY E.marks DESC
-LIMIT 1;
-select *from student;
-select *from enroll;
-select *from course;
-
-insert into enroll values('S001',102,1,88);
-
-CREATE VIEW StudentCourses AS
-SELECT S.regno, S.sname, E.course, E.marks
-FROM STUDENT S
-JOIN ENROLL E ON S.regno = E.regno;
-select *from StudentCourses;
-
+#q6
 DELIMITER //
-CREATE TRIGGER BeforeEnroll
-BEFORE INSERT ON ENROLL
-FOR EACH ROW
+create trigger PreventEnrollment
+before insert on Enroll
+for each row
 BEGIN
-    IF NEW.marks < 40 THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Marks prerequisite not met';
-    END IF;
-END;
-// DELIMITER ;
-
-insert into enroll values('S003',103,4,28);
+IF (new.marks<10) THEN
+signal sqlstate '45000' set message_text='Marks below threshold';
+END IF;
+END;//
+DELIMITER ;
+INSERT INTO Enroll VALUES
+("01HF235", 002, 5, 5);
