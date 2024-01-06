@@ -111,7 +111,7 @@ select Employee.ssn,name,d_no from Employee where not exists
 
 #q5
 select d.d_no, count(*) 
-from Department d join Employee e on e.d_no=d.d_no where salary>600000 group by d.d_no having count(*) >1;
+from Department d join Employee e on e.d_no=d.d_no where salary>600000 group by d.d_no having count(*) >5;
 
 #q6
 create view emp_details as
