@@ -111,14 +111,19 @@ from customers c ,orders o
 where c.cust_id=o.cust_id 
 group by cname;
 
-#q4 
+#q4
+delete from orders where cust_id in ( select cust_id from customers c where c.cname like "%kumar%");
+select *from orders;
+select *from customers;
+
+#q5 
 select max(unitprice) from items;
 
-#q5
+#q6
 create view ordershipment as
 select order_id, ship_date from shipments where warehouse_id like "%2";
 
-#q6
+#q7
 DELIMITER //
 create trigger updateamt
 after insert on orderitems
