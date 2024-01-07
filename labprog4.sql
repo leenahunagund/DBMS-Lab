@@ -115,6 +115,7 @@ FROM Course c, BookAdoption b, TextBook t
 WHERE c.course=b.course
 AND t.bookIsbn=b.bookIsbn
 AND t.publisher!='PEARSON');
+/*select distinct c.dept from course c , bookadoption ba , textbook t where c.course=ba.course and ba.bookisbn=t.bookisbn and publisher like "%pearson%";*/
 
 #q4
 select name from Student s, Enroll e, Course c
